@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Engineering Journal</title>
+    <meta name="description" content="A curated collection of thoughts on software architecture, design systems, and the future of technology.">
+    
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Engineering Journal">
+    <meta property="og:description" content="A curated collection of thoughts on software architecture, design systems, and the future of technology.">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Engineering Journal">
+    <meta name="twitter:description" content="A curated collection of thoughts on software architecture, design systems, and the future of technology.">
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="progress-container"><div id="progress-bar"></div></div>
+
+    <div class="search-modal-backdrop" id="search-modal" onclick="if(event.target === this) toggleSearch()">
+        <div class="search-modal">
+            <input type="text" class="search-input" id="search-input" placeholder="Search posts..." autocomplete="off">
+            <div class="search-results" id="search-results"></div>
+            <div style="padding: 0.75rem; background: var(--tag-bg); border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text-muted); text-align: right;">
+                <span style="border:1px solid var(--border); padding: 2px 6px; border-radius: 4px; background: var(--bg-card);">ESC</span> to close
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <aside class="sidebar" id="mobile-sidebar">
+        <div class="sidebar-header">
+            <span class="logo">Menu</span>
+            <button onclick="toggleSidebar()" style="background:none; border:none; cursor:pointer; color:var(--text-main);"><i data-lucide="x"></i></button>
+        </div>
+        <div class="sidebar-content">
+            <a onclick="filterCategory('All'); toggleSidebar()" class="sidebar-link">Home <i data-lucide="home" style="width:16px"></i></a>
+            <div class="sidebar-divider"></div>
+            <div id="mobile-category-list"></div>
+            <div class="sidebar-divider"></div>
+            <a onclick="toggleTheme(); toggleSidebar()" class="sidebar-link">Toggle Theme <i data-lucide="sun-moon" style="width:16px"></i></a>
+        </div>
+    </aside>
+
+    <header>
+        <div class="container nav-inner">
+            <a href="#" class="logo" onclick="filterCategory('All')"><i data-lucide="layout-grid"></i> Bento<span style="color:var(--text-muted)">Log</span>.</a>
+            <nav class="nav-menu hidden-mobile">
+                <a class="nav-link active" onclick="filterCategory('All')">Journal</a>
+                <div class="dropdown">
+                    <div class="nav-link">Categories <i data-lucide="chevron-down" style="width:14px"></i></div>
+                    <div class="dropdown-content" id="category-dropdown"></div>
+                </div>
+                <button onclick="toggleSearch()" class="nav-link" style="background:none; border:none; font-family:inherit;"><i data-lucide="search" style="width:16px"></i> Search</button>
+                <button onclick="toggleTheme()" style="background:none; border:none; cursor:pointer; margin-left:1rem; color:var(--text-main)"><i data-lucide="moon" id="theme-icon"></i></button>
+            </nav>
+            <div class="visible-mobile" style="display:flex; align-items:center; gap:16px;">
+                <button onclick="toggleSearch()" style="background:none; border:none; cursor:pointer; color:var(--text-main)"><i data-lucide="search" style="width:20px"></i></button>
+                <button onclick="toggleSidebar()" style="background:none; border:none; cursor:pointer; color:var(--text-main)"><i data-lucide="menu"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main id="app" class="container"></main>
+
+    <footer>
+        <div class="container" style="display:flex; flex-direction:column; align-items:center; gap:1rem;">
+            <p>&copy; 2026 BentoLog Systems.</p>
+            <div class="footer-links">
+                <a href="#" onclick="filterCategory('All')">Home</a>
+                <span class="sep">•</span>
+                <a href="#about">About</a>
+                <span class="sep">•</span>
+                <a href="#contact">Contact</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
