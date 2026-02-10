@@ -5,8 +5,19 @@ const categoryStructure = {
 };
 
 const posts = [
+    // --- NEW EXTERNAL FILE POST ---
+    { 
+        id: 99, 
+        slug: "pie-chart-tutorial", 
+        category: "Tutorial", 
+        tags: ["charts", "css"], 
+        date: "Feb 14, 2026", 
+        title: "How to Make a Pie Chart", 
+        desc: "A deep dive into creating pie charts with CSS conic gradients.", 
+        file: "posts/pie.md" // <--- This looks for a folder named 'post' and a file 'pie.md'
+    },
+    // --- EXISTING POSTS ---
     { id: 1, slug: "future-of-dev", category: "Opinion", tags: ["cloud", "devops"], date: "Feb 10, 2026", title: "The End of Localhost", desc: "Why spinning up a local dev environment is becoming a relic of the past.", content: "# Cloud Dev\nIt is faster.\n## The Problem\nLocal environments drift from production.\n### Config Hell\nNobody likes YAML." },
-    
     { id: 2, slug: "rust-vs-go", category: "Engineering", tags: ["rust", "go", "backend"], date: "Feb 08, 2026", title: "Rust vs Go: 2026 Benchmark", desc: "A pragmatic look at which language to choose for microservices.", content: "# Benchmarks\nRust wins on memory.\n## Methodology\nWe tested 500M reqs.\n### Throughput\nGo was close." },
     { id: 3, slug: "design-systems", category: "Design", tags: ["figma", "css"], date: "Feb 05, 2026", title: "Systemizing Chaos", desc: "Automating design tokens from Figma to React.", content: "# Tokens\nJSON is king.\n## Setup\nExport from Figma." },
     { id: 4, slug: "ai-agents", category: "AI", tags: ["llm", "python"], date: "Feb 01, 2026", title: "Autonomous Agents", desc: "Moving beyond chatbots to action-oriented AI loops.", content: "# Agents\nThey do work.\n## Loop\nObserve, Act, Reflect." },
@@ -26,17 +37,6 @@ const posts = [
     { id: 18, slug: "postgres-perf", category: "Database", tags: ["sql", "postgres"], date: "Nov 28, 2025", title: "Postgres Performance Tuning", desc: "Indexes, VACUUM, and query planning.", content: "# SQL\nIt's all about the index." },
     { id: 19, slug: "redis-caching", category: "Backend", tags: ["redis", "cache"], date: "Nov 25, 2025", title: "Redis Caching Strategies", desc: "Cache-aside vs Write-through patterns.", content: "# Cache\nSpeed up reads." },
     { id: 20, slug: "git-mastery", category: "Tools", tags: ["git"], date: "Nov 20, 2025", title: "Git Rebase vs Merge", desc: "Keeping your history clean and linear.", content: "# History\nLinear is better." }
-
-    // { 
-    //     id: 21, 
-    //     slug: "pie-chart-tutorial", 
-    //     category: "Tutorial", 
-    //     tags: ["charts", "css"], 
-    //     date: "Feb 14, 2026", 
-    //     title: "How to Make a Pie Chart", 
-    //     desc: "A deep dive into creating pie charts with CSS conic gradients.", 
-    //     file: "post/pie.md" // <--- POINT TO YOUR FILE HERE
-    // }
 ];
 
 // Global State
@@ -47,29 +47,90 @@ const state = {
     focusedIndex: -1,
     viewMode: 'grid',
     currentPage: 1, 
-    postsPerPage: 6
+    postsPerPage: 9 // Keeps the 9 posts per page logic
 };
 
-// Initialization
+// --- CORE FETCHING LOGIC (UPDATED FOR LIVE SERVER) ---
+async function fetchMarkdown(post) {
+    // 1. If we already fetched content previously, reuse it (Caching)
+    if (post.content) return post.content;
+
+    // 2. If it is an external file, fetch it
+    if (post.file) {
+        try {
+            const response = await fetch(post.file);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const text = await response.text();
+            
+            // Save it so we don't fetch again next time
+            post.content = text; 
+            return text;
+        } catch (error) {
+            console.error("Failed to load markdown file:", error);
+            return "# Error\nCould not load the post content. Ensure the file path is correct.";
+        }
+    }
+
+    return ""; // Fallback
+}
+
+// --- ROUTER (UPDATED TO ASYNC) ---
+async function router() { 
+    const hash = window.location.hash.slice(1); 
+    const container = document.getElementById('app'); 
+    
+    // Simple Loading State (Optional)
+    if (!container.innerHTML || container.innerHTML === "") {
+        // container.innerHTML = '<div style="padding:4rem; text-align:center;">Loading...</div>';
+    }
+
+    if (!hash || hash.includes('search-')) { 
+        renderHome(container); 
+    } else if (hash === 'contact') { 
+        renderContact(container); 
+    } else if (hash === 'about') { 
+        renderAbout(container); 
+    } else { 
+        const post = posts.find(p => p.slug === hash); 
+        if (post) { 
+            // Await the content fetch before rendering
+            if (!post.content) {
+                await fetchMarkdown(post);
+            }
+            renderPost(container, post); 
+        } else { 
+            render404(container); 
+        } 
+    } 
+    window.scrollTo(0, 0); 
+    lucide.createIcons(); 
+}
+
+// --- INITIALIZATION ---
 function init() {
+    const container = document.getElementById('app');
+    if (!container) return; // Wait for DOM
+
     setupTheme(); 
     populateCategories(); 
     setupSearch(); 
     setupKeyboardNav();
     setupScrollListener(); 
+    
     window.addEventListener('hashchange', router);
-    router();
-    lucide.createIcons();
+    router(); // Initial Render
+    
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-// --- FETCHING (MOCKED FOR DEMO, USE fetchMarkdown IN PROD) ---
-async function fetchMarkdown(filePath) {
-    // In production, this fetches from /posts/*.md
-    // For this demo, we just return the content field directly.
-    return posts.find(p => p.file === filePath)?.content || ""; 
-}
+// Ensure DOM is ready before running
+document.addEventListener('DOMContentLoaded', init);
+
+
+// --- HELPER FUNCTIONS (UNCHANGED LOGIC) ---
 
 function calculateReadTime(content) {
+    if (!content) return 0;
     const words = content.trim().split(/\s+/).length;
     return Math.ceil(words / 200);
 }
@@ -220,24 +281,8 @@ function updateMeta(post) {
 function getGridSpan(index) { 
     if (index === 0) return 'span-12'; 
     if (index === 1 || index === 2) return 'span-6'; 
-    if (index >= 3 && index <= 5) return 'span-4'; 
-
-    return 'span-6'; 
+    return 'span-4'; 
 }
-
-
-
-// function getGridSpan(index) { 
-//     // Item 1: Full width (Big featured post)
-//     if (index === 0) return 'span-12'; 
-    
-//     // Items 2 & 3: Half width (2 posts side-by-side)
-//     if (index === 1 || index === 2) return 'span-6'; 
-    
-//     // All other items (4, 5, 6, 7, 8, 9...): One-third width
-//     // This creates neat rows of 3 for everything else.
-//     return 'span-4'; 
-// }
 
 function renderHome(container) {
     updateMeta(null);
@@ -333,7 +378,6 @@ function renderHome(container) {
     lucide.createIcons();
 }
 
-// --- CONTACT VIEW ---
 function renderContact(container) {
     updateMeta(null);
     container.innerHTML = `
@@ -375,7 +419,6 @@ function handleContactSubmit() {
     lucide.createIcons();
 }
 
-// --- ABOUT VIEW ---
 function renderAbout(container) {
     updateMeta(null);
     container.innerHTML = `
@@ -453,7 +496,6 @@ function renderPost(container, post) {
     lucide.createIcons();
 }
 
-// --- UTILS ---
 function setupKeyboardNav() {
     document.addEventListener('keydown', (e) => {
         if (document.querySelector('.search-modal-backdrop').style.display === 'flex') return;
@@ -534,27 +576,6 @@ function render404(container) {
     lucide.createIcons(); 
 }
 
-function router() { 
-    const hash = window.location.hash.slice(1); 
-    const container = document.getElementById('app'); 
-    if (!hash || hash.includes('search-')) { 
-        renderHome(container); 
-    } else if (hash === 'contact') { 
-        renderContact(container); 
-    } else if (hash === 'about') { 
-        renderAbout(container); 
-    } else { 
-        const post = posts.find(p => p.slug === hash); 
-        if (post) { 
-            renderPost(container, post); 
-        } else { 
-            render404(container); 
-        } 
-    } 
-    window.scrollTo(0, 0); 
-    lucide.createIcons(); 
-}
-
 function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
@@ -569,6 +590,3 @@ function setupTheme() {
     document.documentElement.setAttribute('data-theme', saved); 
     document.getElementById('theme-icon').setAttribute('data-lucide', saved === 'dark' ? 'sun' : 'moon'); 
 }
-
-// Start the app
-init();
