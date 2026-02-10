@@ -14,7 +14,7 @@ const posts = [
         date: "Feb 14, 2026", 
         title: "How to Make a Pie Chart", 
         desc: "A deep dive into creating pie charts with CSS conic gradients.", 
-        file: "posts/pie.md" // <--- This looks for a folder named 'post' and a file 'pie.md'
+        file: "posts/pie.md" // <--- This looks for a folder named 'posts' and a file 'pie.md'
     },
     // --- EXISTING POSTS ---
     { id: 1, slug: "future-of-dev", category: "Opinion", tags: ["cloud", "devops"], date: "Feb 10, 2026", title: "The End of Localhost", desc: "Why spinning up a local dev environment is becoming a relic of the past.", content: "# Cloud Dev\nIt is faster.\n## The Problem\nLocal environments drift from production.\n### Config Hell\nNobody likes YAML." },
@@ -47,10 +47,10 @@ const state = {
     focusedIndex: -1,
     viewMode: 'grid',
     currentPage: 1, 
-    postsPerPage: 9 // Keeps the 9 posts per page logic
+    postsPerPage: 9 
 };
 
-// --- CORE FETCHING LOGIC (UPDATED FOR LIVE SERVER) ---
+// --- CORE FETCHING LOGIC (UPDATED FOR FRONTMATTER SUPPORT) ---
 async function fetchMarkdown(post) {
     // 1. If we already fetched content previously, reuse it (Caching)
     if (post.content) return post.content;
@@ -60,11 +60,46 @@ async function fetchMarkdown(post) {
         try {
             const response = await fetch(post.file);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const text = await response.text();
+            const rawText = await response.text();
             
-            // Save it so we don't fetch again next time
-            post.content = text; 
-            return text;
+            // --- FRONTMATTER PARSER ---
+            // Detects the block between --- and ---
+            const frontmatterRegex = /^---\s*[\r\n]+([\s\S]*?)[\r\n]+---\s*[\r\n]+([\s\S]*)$/;
+            const match = rawText.match(frontmatterRegex);
+
+            if (match) {
+                const metadataBlock = match[1];
+                const bodyContent = match[2];
+
+                // Parse YAML-like metadata manually
+                const metadata = {};
+                metadataBlock.split('\n').forEach(line => {
+                    let [key, ...rest] = line.split(':');
+                    if (key && rest.length) {
+                        key = key.trim();
+                        let value = rest.join(':').trim();
+                        // Remove quotes
+                        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+                            value = value.slice(1, -1);
+                        }
+                        // Handle Tags Array [a, b]
+                        if (key === 'tags' && value.startsWith('[') && value.endsWith(']')) {
+                            metadata[key] = value.slice(1, -1).split(',').map(s => s.trim().replace(/['"]/g, ''));
+                        } else {
+                            metadata[key] = value;
+                        }
+                    }
+                });
+
+                // OVERWRITE post data with file data
+                Object.assign(post, metadata);
+                post.content = bodyContent;
+                return bodyContent;
+            } else {
+                // No frontmatter? Just use text as body
+                post.content = rawText;
+                return rawText;
+            }
         } catch (error) {
             console.error("Failed to load markdown file:", error);
             return "# Error\nCould not load the post content. Ensure the file path is correct.";
@@ -74,12 +109,12 @@ async function fetchMarkdown(post) {
     return ""; // Fallback
 }
 
-// --- ROUTER (UPDATED TO ASYNC) ---
+// --- ROUTER (ASYNC) ---
 async function router() { 
     const hash = window.location.hash.slice(1); 
     const container = document.getElementById('app'); 
     
-    // Simple Loading State (Optional)
+    // Simple Loading State
     if (!container.innerHTML || container.innerHTML === "") {
         // container.innerHTML = '<div style="padding:4rem; text-align:center;">Loading...</div>';
     }
@@ -103,7 +138,7 @@ async function router() {
         } 
     } 
     window.scrollTo(0, 0); 
-    lucide.createIcons(); 
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 // --- INITIALIZATION ---
@@ -127,7 +162,7 @@ function init() {
 document.addEventListener('DOMContentLoaded', init);
 
 
-// --- HELPER FUNCTIONS (UNCHANGED LOGIC) ---
+// --- HELPER FUNCTIONS ---
 
 function calculateReadTime(content) {
     if (!content) return 0;
@@ -375,7 +410,7 @@ function renderHome(container) {
         ${filteredPosts.length > 0 ? postsHtml : '<p style="text-align:center;">No posts found.</p>'}
         ${paginationHtml}
     `;
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function renderContact(container) {
@@ -410,13 +445,13 @@ function renderContact(container) {
             </div>
         </div>
     `;
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function handleContactSubmit() {
     document.getElementById('contact-form').style.display = 'none';
     document.getElementById('success-message').style.display = 'block';
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function renderAbout(container) {
@@ -451,7 +486,7 @@ function renderAbout(container) {
             </div>
         </div>
     `;
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function renderPost(container, post) {
@@ -492,13 +527,13 @@ function renderPost(container, post) {
     if (headings.length > 0) headings.forEach((h) => { const id = h.innerText.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''); h.id = id; const depth = h.tagName === 'H2' ? 2 : 3; tocList.innerHTML += `<li><a href="#${id}" class="toc-link depth-${depth}" onclick="document.getElementById('${id}').scrollIntoView({behavior: 'smooth'}); return false;">${h.innerText}</a></li>`; }); else document.querySelector('.toc-sidebar').style.display = 'none';
     container.querySelectorAll('pre').forEach(pre => { const btn = document.createElement('button'); btn.className = 'copy-btn'; btn.innerHTML = 'Copy'; btn.onclick = () => { navigator.clipboard.writeText(pre.querySelector('code').innerText); btn.innerHTML = 'Copied!'; setTimeout(() => btn.innerHTML = 'Copy', 2000); }; pre.appendChild(btn); });
     
-    hljs.highlightAll(); 
-    lucide.createIcons();
+    if (typeof hljs !== 'undefined') hljs.highlightAll(); 
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function setupKeyboardNav() {
     document.addEventListener('keydown', (e) => {
-        if (document.querySelector('.search-modal-backdrop').style.display === 'flex') return;
+        if (document.querySelector('.search-modal-backdrop') && document.querySelector('.search-modal-backdrop').style.display === 'flex') return;
         if (e.metaKey || e.ctrlKey || e.altKey) return;
         const hash = window.location.hash; const isHome = !hash || hash.includes('search-');
         if (isHome) {
@@ -522,17 +557,19 @@ function highlightCard(cards) {
 
 function setupSearch() {
     const input = document.getElementById('search-input'); 
+    if(!input) return;
     input.addEventListener('keyup', (e) => { 
         const term = e.target.value.toLowerCase(); 
         const results = posts.filter(p => p.title.toLowerCase().includes(term) || p.desc.toLowerCase().includes(term)); 
         const html = results.map(p => `<a href="#${p.slug}" onclick="toggleSearch()" class="search-result-item"><span class="search-result-title">${p.title}</span><span class="search-result-meta">${p.date} • ${p.category}</span></a>`).join(''); 
         document.getElementById('search-results').innerHTML = results.length ? html : '<div style="padding:1rem; color:var(--text-muted)">No results found.</div>'; 
     });
-    document.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); toggleSearch(); } if (e.key === 'Escape') document.querySelector('.search-modal-backdrop').style.display = 'none'; });
+    document.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); toggleSearch(); } if (e.key === 'Escape') { const m=document.querySelector('.search-modal-backdrop'); if(m) m.style.display = 'none'; }});
 }
 
 function toggleSearch() { 
     const modal = document.querySelector('.search-modal-backdrop'); 
+    if(!modal) return;
     modal.style.display = getComputedStyle(modal).display === 'none' ? 'flex' : 'none'; 
     if (modal.style.display === 'flex') document.getElementById('search-input').focus(); 
 }
@@ -556,6 +593,8 @@ function toggleAccordion(id, iconId) {
 
 function populateCategories() {
     const dropdown = document.getElementById('category-dropdown');
+    if(!dropdown) return;
+
     let deskHtml = `<div class="dropdown-group"><div class="group-header" onclick="filterCategory('All')">All Posts</div></div>`;
     const mobileList = document.getElementById('mobile-category-list');
     let mobHtml = `<a onclick="filterCategory('All'); toggleSidebar()" class="mobile-group-header" style="border-bottom:1px solid var(--border);">All Posts</a>`;
@@ -567,13 +606,14 @@ function populateCategories() {
         deskHtml += `<div class="dropdown-group"><div class="group-header" onclick="toggleAccordion('${deskId}', '${deskIconId}')"><span onclick="event.stopPropagation(); filterCategory('${parent}')">${parent}</span><i data-lucide="chevron-down" id="${deskIconId}" class="chevron-icon ${initialRotate}"></i></div><div id="${deskId}" class="group-children" style="max-height: ${initialHeight};">${children.map(child => `<a href="#" onclick="filterCategory('${child}')" class="dropdown-item">${child}</a>`).join('')}</div></div>`;
         mobHtml += `<div class="mobile-group"><div class="mobile-group-header" onclick="toggleAccordion('${mobId}', '${mobIconId}')"><span onclick="event.stopPropagation(); filterCategory('${parent}'); toggleSidebar()">${parent}</span><i data-lucide="chevron-down" id="${mobIconId}" class="chevron-icon ${initialRotate}"></i></div><div id="${mobId}" class="group-children" style="max-height: ${initialHeight};">${children.map(child => `<a onclick="filterCategory('${child}'); toggleSidebar()" class="mobile-sub-link">${child}</a>`).join('')}</div></div>`;
     }
-    dropdown.innerHTML = deskHtml; mobileList.innerHTML = mobHtml;
+    dropdown.innerHTML = deskHtml; 
+    if(mobileList) mobileList.innerHTML = mobHtml;
 }
 
 function render404(container) { 
     updateMeta(null); 
     container.innerHTML = `<div class="error-state"><i data-lucide="file-warning" class="error-icon"></i><h1 class="error-title">Page Not Found</h1><p style="color:var(--text-muted); margin-bottom:1.5rem;">The article you are looking for doesn't exist or has been moved.</p><a href="#" onclick="filterCategory('All')" class="error-btn">Go Back Home</a></div>`; 
-    lucide.createIcons(); 
+    if (typeof lucide !== 'undefined') lucide.createIcons(); 
 }
 
 function toggleTheme() {
@@ -582,11 +622,12 @@ function toggleTheme() {
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
     document.getElementById('theme-icon').setAttribute('data-lucide', next === 'dark' ? 'sun' : 'moon');
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function setupTheme() { 
     const saved = localStorage.getItem('theme') || 'light'; 
     document.documentElement.setAttribute('data-theme', saved); 
-    document.getElementById('theme-icon').setAttribute('data-lucide', saved === 'dark' ? 'sun' : 'moon'); 
+    const icon = document.getElementById('theme-icon');
+    if(icon) icon.setAttribute('data-lucide', saved === 'dark' ? 'sun' : 'moon'); 
 }
