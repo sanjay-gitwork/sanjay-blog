@@ -6,6 +6,18 @@ const categoryStructure = {
 
 const posts = [
     // --- NEW EXTERNAL FILE POST ---
+
+        { 
+        id: 100, 
+        slug: "first-article", 
+        category: "Test", 
+        tags: ["testing", "markdown", "developement"], 
+        date: "Feb 16, 2026", 
+        title: "How to Create First Post", 
+        desc: "This is a sample post designed to test all standard Markdown rendering features including code blocks, lists, and typography.",
+        file: "posts/first.md" // <--- This looks for a folder named 'posts' and a file 'pie.md'
+    },
+
     { 
         id: 99, 
         slug: "pie-chart-tutorial", 
