@@ -11,11 +11,11 @@ const posts = [
         id: 100, 
         slug: "first-article", 
         category: "Test", 
-        tags: ["testing", "markdown", "developement"], 
+        tags: ["testing", "markdown", "development"], 
         date: "Feb 16, 2026", 
         title: "How to Create First Post", 
         desc: "This is a sample post designed to test all standard Markdown rendering features including code blocks, lists, and typography.",
-        file: "posts/first.md" // <--- This looks for a folder named 'posts' and a file 'pie.md'
+        file: "posts/first.md" // <--- This looks for a folder named 'posts' and a file 'first.md'
     },
 
     { 
@@ -86,10 +86,10 @@ async function fetchMarkdown(post) {
                 // Parse YAML-like metadata manually
                 const metadata = {};
                 metadataBlock.split('\n').forEach(line => {
-                    let [key, ...rest] = line.split(':');
-                    if (key && rest.length) {
-                        key = key.trim();
-                        let value = rest.join(':').trim();
+                    const colonIndex = line.indexOf(':');
+                    if (colonIndex !== -1) {
+                        let key = line.substring(0, colonIndex).trim();
+                        let value = line.substring(colonIndex + 1).trim();
                         // Remove quotes
                         if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
                             value = value.slice(1, -1);
@@ -126,11 +126,6 @@ async function router() {
     const hash = window.location.hash.slice(1); 
     const container = document.getElementById('app'); 
     
-    // Simple Loading State
-    if (!container.innerHTML || container.innerHTML === "") {
-        // container.innerHTML = '<div style="padding:4rem; text-align:center;">Loading...</div>';
-    }
-
     if (!hash || hash.includes('search-')) { 
         renderHome(container); 
     } else if (hash === 'contact') { 
@@ -154,7 +149,7 @@ async function router() {
 }
 
 // --- INITIALIZATION ---
-function init() {
+async function init() {
     const container = document.getElementById('app');
     if (!container) return; // Wait for DOM
 
@@ -164,6 +159,12 @@ function init() {
     setupKeyboardNav();
     setupScrollListener(); 
     
+    // PRE-FETCH External Markdown to fix read-time on home page
+    const externalPosts = posts.filter(p => p.file && !p.content);
+    if (externalPosts.length > 0) {
+        await Promise.all(externalPosts.map(p => fetchMarkdown(p)));
+    }
+
     window.addEventListener('hashchange', router);
     router(); // Initial Render
     
@@ -179,7 +180,7 @@ document.addEventListener('DOMContentLoaded', init);
 function calculateReadTime(content) {
     if (!content) return 0;
     const words = content.trim().split(/\s+/).length;
-    return Math.ceil(words / 200);
+    return Math.max(1, Math.ceil(words / 200));
 }
 
 function setupScrollListener() {
@@ -305,12 +306,8 @@ function getFilteredPosts() {
     if (state.currentTag) {
         results = posts.filter(p => p.tags && p.tags.includes(state.currentTag));
     } else if (state.currentCategory !== 'All') {
-        if (categoryStructure[state.currentCategory]) { 
-            const children = categoryStructure[state.currentCategory]; 
-            results = posts.filter(p => children.includes(p.category)); 
-        } else {
-            results = posts.filter(p => p.category === state.currentCategory); 
-        }
+        const children = categoryStructure[state.currentCategory] || [];
+        results = posts.filter(p => p.category === state.currentCategory || children.includes(p.category));
     }
     return sortPosts(results);
 }
