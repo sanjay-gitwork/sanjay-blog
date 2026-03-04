@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --bg-body: #ffffff;
+    --text-main: #09090b;
+    --text-muted: #71717a;
+    --border: #e4e4e7;
+}
+
+[data-theme="dark"] {
+    --bg-body: #020617;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border: #1e293b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    @apply antialiased;
+}
+
+/* Custom Typography Overrides */
+.prose {
+    @apply max-w-none;
+}
+
+.prose h2, .prose h3 {
+    @apply scroll-mt-32 font-black tracking-tight;
+}
+
+.prose pre {
+    @apply !bg-slate-900 !rounded-3xl border border-slate-800 shadow-2xl my-10;
+}
+
+.prose code {
+    @apply !bg-slate-100 dark:!bg-slate-800 !text-indigo-600 dark:!text-indigo-400 !px-1.5 !py-0.5 !rounded-lg !font-bold !text-[0.9em] before:content-[''] after:content-[''];
+}
+
+/* Custom Bento Transitions */
+.card-hover-effect {
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                box-shadow 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Custom scrollbar for better UI */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+/* Syntax Highlighting (Vibrant Atom One Dark Theme) */
+.hljs {
+  @apply text-[#abb2bf];
+}
+
+.hljs-comment,
+.hljs-quote {
+  @apply text-[#5c6370] italic;
+}
+
+.hljs-doctag,
+.hljs-keyword,
+.hljs-formula {
+  @apply text-[#c678dd]; /* Purple */
+}
+
+.hljs-section,
+.hljs-name,
+.hljs-selector-tag,
+.hljs-deletion,
+.hljs-subst {
+  @apply text-[#e06c75]; /* Red/Pink */
+}
+
+.hljs-literal {
+  @apply text-[#56b6c2]; /* Cyan */
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute,
+.hljs-meta .hljs-string {
+  @apply text-[#98c379]; /* Green */
+}
+
+.hljs-built_in,
+.hljs-class .hljs-title {
+  @apply text-[#e6c07b]; /* Yellow */
+}
+
+.hljs-attr,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-type,
+.hljs-selector-class,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-number {
+  @apply text-[#d19a66]; /* Orange */
+}
+
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link,
+.hljs-meta,
+.hljs-selector-id,
+.hljs-title {
+  @apply text-[#61afef]; /* Blue */
+}
+
+.hljs-emphasis {
+  @apply italic;
+}
+
+.hljs-strong {
+  @apply font-bold;
+}
+
+.hljs-link {
+  @apply underline;
+}
+
+/* Ensure Prose doesn't override colors */
+.prose pre code span {
+  color: inherit !important;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 dark:bg-slate-800 rounded-full border-4 border-white dark:border-slate-950;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-300 dark:bg-slate-700;
+}

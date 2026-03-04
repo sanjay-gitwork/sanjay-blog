@@ -7,7 +7,7 @@ tags: ["testing", "markdown", "development"]
 ---
 
 # Welcome to the Blog
-
+ -sanjay
 This is the first article on the site. Its primary purpose is to **stress-test** the styling and rendering logic of the application. Below you will find examples of standard Markdown syntax.
 
 ## Typography and Emphasis
